@@ -1,0 +1,76 @@
+.block-nonselected:hover {
+    background-color: #ccc;
+}
+
+.block-line-selected {
+    background-color: #ccc;
+}
+
+.block-equal-selected {
+    background-color: #276896d0;
+}
+
+.block-line-wrong {
+    background-color: #f5b8b8;
+}
+
+.block-selected {
+    background-color: #8aaee5;
+}
+
+.wrong {
+    color: red;
+}
+
+.correct {
+    color: blue;
+}
+
+.num-on:hover {
+    background-color: #ccc;
+}
+
+.num-off {
+    background-color: gray;
+}
+
+.tool-on {
+    background-color: #ccc;
+}
+
+.tool-off {
+    background-color: gray;
+}
+ 
+.stat-menu {
+    margin-right: 3%;
+    margin-top: 2%;
+    vertical-align: center;
+    user-select: none;
+    width: 10%;
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-content {
+    position: relative;
+    display: none;
+    padding-left: 8%;
+    height: 45%;
+    top: 0;
+    left: 0%;
+    z-index: 1;
+    background: aliceblue;
+    opacity: 1;
+    border: 1px solid black;
+    transition: height 1s;
+}
+
+.stat-content.active {
+    display: block;
+    /*transition: height 1s, opacity 2s;*/
+}
+
+.del-stat {
+    width: 100%;
+}

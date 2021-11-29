@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+
+    <head>
+        <title>Sudoku Online</title>
+        <link rel="stylesheet" href="css/style.css">
+        <link rel="stylesheet" href="css/dynamic.css">
+    </head>
+
+
+    <body>
+        <header class="page-header">
+            <div class="header-container">
+                <div class="me">
+                    <img src="img/Avatar.jpg" class="ava">
+                    <p class="sign">Made by Dadypool</p>
+                </div>
+
+                <div class="head-container"><h1 class="heading">Sud<span>O</span>ku</h1></div>
+
+                <div class="contacts-container">
+                    <a href="https://vk.com/dudypool" target="_blank" class="contacts">
+                        <img src="img/vk.png">
+                        dudypool
+                    </a>
+                    <a href="mailto:dudypool@yandex.ru" target="_blank" class="contacts">
+                        <img src="img/email.png">
+                        dudypool
+                    </a>
+                </div>
+            </div>
+        </header>
+
+
+        <main class="main">
+            <section class="main-window">
+                <div class="main-field">
+                </div>
+
+                <div class="toolpad">
+                    <div class="numpad">
+
+                    </div>
+
+                    <div class="tools">
+                        <div class="tool"><img src="img/back.png" alt="Back button"></div>
+                        <div class="tool"><img src="img/write.png" alt="Note button"></div>
+                        <div class="tool"><img src="img/rubber.png" alt="Rubber button"></div>
+                        <div class="tool"><img src="img/idea.png" alt="Tip button"></div>
+                    </div>
+
+                    <div class="newgame" onclick="GenerateField()">
+                        <a>Новая игра</a>
+                    </div>
+
+                    <div class="difficulty">
+                        <span>Сложность:</span>
+                        <select class="select-difficulty" name="difficulty" onchange="ChangeDiff()">
+                            <option value="0">Детская</option>
+                            <option value="1">Легкая</option>
+                            <option value="2" selected>Нормальная</option>
+                            <option value="3">Сложная</option>
+                            <option value="4">Über</option>
+                        </select>
+                    </div>
+
+                    <div class="extra">
+                        <div class="size">
+                            Размер:
+                            <select class="select-size" name="size" onchange="ChangeSize()">
+                                <option value="2">2x2</option>
+                                <option value="3">3x3</option>
+                                <option value="4">4x4</option>
+                                <option value="5">5x5</option>
+                                <option value="6">6x6</option>
+                                <option value="9" selected>9x9</option>
+                            </select>
+                        </div>
+                        <div class="type" value='123' onclick="ChangeType()">ABC</div>
+                    </div>
+                </div>
+
+            </section>
+
+            <div class="stat-menu">
+                <button class="show-moves" onclick="ShowMoves()">Показать число возможных ходов</button>
+                <button class="button-stat" onclick="showStat()">\/ Статистика \/</button>
+                <div class="stat-content">
+                        <p>9x9: <span class="stat9">0</span></p>
+                        <p>6x6: <span class="stat6">0</span></p>
+                        <p>5x5: <span class="stat5">0</span></p>
+                        <p>4x4: <span class="stat4">0</span></p>
+                        <p>3x3: <span class="stat3">0</span></p>
+                        <p>2x2: <span class="stat2">0</span></p>
+                        <p>Всего: <span class="stat">0</span></p>
+                </div>
+                <div class="del">
+                    <button class="del-stat" onclick="DelStat()">Сбросить статистику</button>
+                    <button class="del-game" onclick="DelGame()">Сбросить текущую игру и настройки</button>
+                </div>
+            </div>
+
+        <script src="js/script.js"></script>
+    </body>
+
+</html>
