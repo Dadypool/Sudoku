@@ -836,9 +836,16 @@ function Hide(field, d) {
         }
 
         // Скрытые ячейки в матрице будут -1
+        let temp = refield[ii][jj];
+        refield[ii][jj] = -1;
         if (bad > 0) {
             empty = 0;
             l--;
+            refield[ii][jj] = temp;
+        } else if (!ShowMoves(refield)) {
+            empty = 0;
+            l--;
+            refield[ii][jj] = temp;
         }
         else {
             refield[ii][jj] = -1;
