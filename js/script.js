@@ -145,12 +145,7 @@ function LoadNote(selected) {
 
 /* Построение игровой сетки */
 function BuildField() {
-    let size;
-    for (let s of document.querySelector('.select-size').childNodes) {
-        if(s.selected == true) {
-            size = parseInt(s.value);
-        }
-    }
+    let size = document.querySelector('.select-size').value;
 
     // Сначала очищаем сетку, если она уже есть
     let main = document.querySelector('.main-field');
@@ -451,7 +446,7 @@ function ChangeDiff() {
 
 /* Подсвечивание блоков */
 function ShowBlocks() {
-    let size = document.querySelectorAll('.num-on').length;
+    let size = document.querySelector('.select-size').value;
     let blocks = document.querySelectorAll('.block');
 
     // При потворном нажатии на ту же клетку, подсветка убирается
@@ -834,6 +829,9 @@ function Hide(field, d) {
                 empty--;
             }
         }
+        if (empty < 0) {
+            bad++;
+        }
 
         // Скрытые ячейки в матрице будут -1
         let temp = refield[ii][jj];
@@ -895,7 +893,6 @@ function HideBlocks(refield) {
 
 /* Поиск возможных ходов */
 function ShowMoves(hidefield=null) {
-    //alert();
     let moves = 0;
     let size = parseInt(localStorage.getItem('size'));
     if (!size) size = 9;
@@ -917,10 +914,9 @@ function ShowMoves(hidefield=null) {
             return;
         }
     }
-    //alert(hidefield);
+
     for (let i = 0; i < size; i++) {
         for (let j = 0; j < size; j++) {
-            //alert(moves);
             if (hidefield[i][j] == -1) {
                 let ns = [];
                 for (let k = 1; k <= size; k++) ns.push(k);
@@ -928,7 +924,6 @@ function ShowMoves(hidefield=null) {
                 for (let k = 0; k < size; k++) {
                     if(hidefield[k][j] != -1) {
                         let index = ns.indexOf(hidefield[k][j]);
-                        //alert(index);
                         if (index != -1) ns.splice(index, 1);
                     }
     
@@ -947,7 +942,6 @@ function ShowMoves(hidefield=null) {
                         for (let bj = aj*sqr; bj < (aj+1)*sqr; bj++) {
                             if(hidefield[bi][bj] != -1) {
                                 let index = ns.indexOf(hidefield[bi][bj]);
-                                //alert(index);
                                 if (index != -1) ns.splice(index, 1);
                             }
                         }
@@ -964,7 +958,6 @@ function ShowMoves(hidefield=null) {
 
                 let k = 0;
                 for (let n of ns) {
-                    //alert(ns+": "+n);
                     k = 0;
                     for (let ai = 0; ai < size; ai++) {
                         if (ai != i) {
@@ -1449,7 +1442,7 @@ function Hint(field, refield, hidefield) {
 
 /* Функции для перетасовки поля */
 
-/* Рандомное число в диапозлне */
+/* Рандомное число в диапозоне */
 function random(min, max) {
     // случайное число от min до (max+1)
     let rand = min + Math.random() * (max + 1 - min);
@@ -1568,6 +1561,308 @@ function Transpos(field, size) {
 
 /* */
 
+/* Создание своего игрового поля */
+function CreateField() {
+    if (document.querySelector('.hidden')) {
+        let c = confirm('Вы уверены что хотите создать своё игровое поле? Прогресс этой игры будет удалён');
+        if (!c){
+            return;
+        } 
+    }
+    let blocks = document.querySelectorAll('.block');
+    localStorage.removeItem('field');
+    localStorage.removeItem('refield');
+    localStorage.removeItem('hidefield');
+    for (let block of blocks) {
+        if (block.classList.contains('note')) {
+            localStorage.removeItem('note'+block.id);
+        }
+    }
+    ClearField();
+    let button = document.querySelector('.create');
+    if (button.textContent == "Отменить создание") {
+        // Возвращаем всё обратно
+        ClearField();
+
+        button.textContent = "Создать своё поле";
+
+        let tools = document.querySelectorAll('.tool-off');
+        for (let i = 0; i < 3; i++) {
+            tools[i].classList.add('tool');
+            tools[i].classList.remove('tool-off');
+            tools[i].childNodes[0].hidden = false;
+        }
+
+        let dif = document.querySelector('.difficulty');
+        for (let c of dif.childNodes) c.hidden = false;
+        dif.classList.remove('tool-off'); 
+
+        return;
+    }
+
+    button.textContent = "Отменить создание";
+
+    // Отключаем инструменты
+    let tools = document.querySelectorAll('.tool');
+    for (let i = 0; i < 4; i++) {
+        if (i != 2) {
+            tools[i].classList.remove('tool');
+            tools[i].classList.add('tool-off');
+            tools[i].childNodes[0].hidden = true;
+        }
+    }
+
+    let dif = document.querySelector('.difficulty');
+    for (let c of dif.childNodes) c.hidden = true;
+    dif.classList.add('tool-off');
+
+    // Добавляем на блоки ивент клика
+    for (let block of blocks) {
+        block.classList.add('block-nonselected');
+        block.addEventListener('click',ShowBlocks);
+        block.addEventListener('click',UpdateNumpad);
+        block.textContent = '';
+    }
+
+    // Ластик
+    tools[2].onclick = function() {
+        let selected = document.querySelector('.block-selected');
+        selected.textContent = '';
+        ufield[selected.id[0]-1][selected.id[1]-1] = -1;
+        selected.click();selected.click();
+    }
+
+    // Создаём матрицу игрового поля
+    let size = document.querySelector('.select-size').value;
+    let ufield = [];
+    for (let i = 0; i < size; i++) {
+        let block = [];
+        for (let j = 0; j < size; j++) {
+            block.push(-1);
+        }
+        ufield.push(block);
+    }
+
+    // При нажатии на кнопку
+    let nums = document.querySelectorAll('.num');
+    for (let num of nums) {
+        num.onclick = function() {
+            let type = 0;
+            if (document.querySelector('.type').textContent == '123') type = 1;
+            let abc = ["A", "B", "C", "D", "E", "F", "G", "H", "I"];
+            let selected = document.querySelector('.block-selected');
+            if (!selected) return;
+            if (selected.textContent == num.textContent) {
+                selected.textContent = '';
+                ufield[selected.id[0]-1][selected.id[1]-1] = -1;
+            } else {
+                selected.textContent = num.textContent;
+                if (type) ufield[selected.id[0]-1][selected.id[1]-1] = abc.indexOf(num.textContent)+1;
+                else ufield[selected.id[0]-1][selected.id[1]-1] = num.textContent;
+            }
+            selected.click();selected.click();
+        }
+    }
+
+    function FindWin() {
+        let type = 0;
+        if (document.querySelector('.type').textContent == '123') type = 1;
+        //alert(ufield);
+        localStorage.setItem('ufield', ufield);
+        let n = SearchWin();
+        if (!n) {
+            alert("Ваша игра не имеет решений. Попробуйте добавить больше ячеек");
+        } else if (n == 2) {
+            alert('Ваше игровое поле составлено неверно. В нем будут совпадающие элементы');
+        }
+        else {
+            document.querySelector('.newgame').removeEventListener('click', FindWin);
+            document.querySelector('.newgame').addEventListener('click', GenerateField);
+            //alert("Полная победа мафии");
+            button.textContent = "Создать своё поле";
+            for (let i = 0; i < size; i++) {
+                if (!type) nums[i].textContent = i+1;
+                else nums[i].textContent = abc[i];
+                nums[i].classList.remove('num-off');
+                nums[i].classList.add('num-on');
+            }
+            let tools = document.querySelectorAll('.tool-off');
+            for (let i = 0; i < 3; i++) {
+                tools[i].classList.add('tool');
+                tools[i].classList.remove('tool-off');
+                tools[i].childNodes[0].hidden = false;
+            }
+    
+            let dif = document.querySelector('.difficulty');
+            for (let c of dif.childNodes) c.hidden = false;
+            dif.classList.remove('tool-off'); 
+            ClearField();
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    blocks[i*size+j].textContent = n[i][j];
+                }
+            }
+            HideBlocks(ufield);
+            localStorage.setItem('field', n);
+            localStorage.setItem('refield', ufield);
+            localStorage.setItem('hidefield', ufield);
+            WriteIn(n, ufield, ufield);
+        }
+    }
+
+    document.querySelector('.newgame').removeEventListener('click', GenerateField);
+    document.querySelector('.newgame').addEventListener('click', FindWin);
+}
+/* */
+
+/* Убираем цифры, которые есть уже в доступной области */
+function UpdateNumpad() {
+    let nums = document.querySelectorAll('.num');
+    let selected = document.querySelector('.block-selected');
+    let size = document.querySelector('.select-size').value;
+    let type = 0;
+    if (document.querySelector('.type').textContent == '123') type = 1;
+    let abc = ["A", "B", "C", "D", "E", "F", "G", "H", "I"];
+
+    for (let i = 0; i < size; i++) {
+        if (!type) nums[i].textContent = i+1;
+        else nums[i].textContent = abc[i];
+        nums[i].classList.remove('num-off');
+        nums[i].classList.add('num-on');
+    }
+
+    if (!selected) return;
+
+    if (selected.textContent != '') {
+        let n = selected.textContent-1;
+        if (type) n = abc.indexOf(selected.textContent);
+
+        nums[n].classList.remove('num-on');
+        nums[n].classList.add('num-off');
+        nums[n].textContent = '';
+    }
+    let line = document.querySelectorAll('.block-line-selected');
+    for (let block of line) {
+        if (block.textContent != '') {
+            let n = block.textContent-1;
+            if (type) n = abc.indexOf(block.textContent);
+
+            nums[n].classList.remove('num-on');
+            nums[n].classList.add('num-off');
+            nums[n].textContent = '';
+        }
+    }
+}
+/* */
+
+/* Поиск полного решения */
+function SearchWin(hidefield=null) {
+    let moves = 0;
+    let size = parseInt(localStorage.getItem('size'));
+    if (!size) size = 9;
+    if (!hidefield) {
+        hidefield = [];
+        let hidefield_str = localStorage.getItem('ufield');
+        hidefield_str = hidefield_str.split(',');
+        for (let i = 0; i < size; i++) {
+            let block = [];
+            for (let j = 0; j < size; j++) {
+                block.push(parseInt(hidefield_str[i*size + j]));
+            }
+            hidefield.push(block);
+        }
+    }
+
+    for (let i = 0; i < size; i++) {
+        for (let j = 0; j < size; j++) {
+            if (hidefield[i][j] == -1) {
+                let ns = [];
+                for (let k = 1; k <= size; k++) ns.push(k);
+    
+                for (let k = 0; k < size; k++) {
+                    if(hidefield[k][j] != -1) {
+                        let index = ns.indexOf(hidefield[k][j]);
+                        if (index != -1) ns.splice(index, 1);
+                    }
+    
+                    if (hidefield[i][k] != -1) {
+                        let index = ns.indexOf(hidefield[i][k]);
+                        if (index != -1) ns.splice(index, 1);
+                    }
+                }
+
+                if (size == 4 || size == 9) {
+                    let sqr = Math.sqrt(size);
+                    let ai = Math.floor(i/sqr);
+                    let aj = Math.floor(j/sqr);
+
+                    for (let bi = ai*sqr; bi < (ai+1)*sqr; bi++) {
+                        for (let bj = aj*sqr; bj < (aj+1)*sqr; bj++) {
+                            if(hidefield[bi][bj] != -1) {
+                                let index = ns.indexOf(hidefield[bi][bj]);
+                                if (index != -1) ns.splice(index, 1);
+                            }
+                        }
+                    }
+                }
+
+                if (ns.length == 1) {
+                    moves++;
+                    hidefield[i][j] = ns[0];
+                    SearchWin(hidefield);
+                } else if (ns.length == 0) {
+                    return 2;
+                }
+
+                let k = 0;
+                for (let n of ns) {
+                    k = 0;
+                    for (let ai = 0; ai < size; ai++) {
+                        if (ai != i) {
+                            for (let aj = 0; aj < size; aj++) {
+                                if (aj != j) {
+                                    if (hidefield[ai][aj] == n) k++;
+                                }
+                            }
+                        }
+                    }
+                    if (k == (size-1)) {
+                        moves++;
+                        hidefield[i][j] = n;
+                        SearchWin(hidefield);
+                    }
+                }
+
+            }
+        }
+    }
+
+    let flag = 0, n = 0;
+    for (let i = 0; i < size; i++) {
+        for (let j = 0; j < size; j++) {
+            if (hidefield[i][j] == -1) {
+                flag = 1;
+                break;
+            }
+            n++;
+        }
+        if (flag) break;
+    }
+    if (n == (size*size)) return hidefield;
+    else return 0;
+}
+/* */
+
+/* Чистим блоки */
+function ClearField() {
+    let blocks = document.querySelectorAll('.block');
+    for (let block of blocks) {
+        block.textContent = '';
+        block.removeEventListener('click',UpdateNumpad);
+    }
+}
+/* */
+
 /* Очистка localStorage и обновдение страницы*/
 function Reload() {
     localStorage.clear()
@@ -1613,6 +1908,98 @@ function showStat() {
         document.querySelector('.stat-content').classList.remove('active');
         document.querySelector('.button-stat').innerHTML = '\\\/ Статистика \\\/';
     }
+}
+/* */
+
+/* Анимация генерации поля */
+async function AnimationGenerateField() {
+    if (document.querySelector('.hidden')) { // Если есть текущая игра
+        let c = confirm('Вы уверены, что хотите сбросить прогресс текущей игры?');
+        if (!c) return;
+    }
+    document.querySelectorAll('.tool')[1].classList.remove('tool-on');
+    let size = document.querySelector('.select-size').value;
+
+    // Создаём новую матрицу
+    let field = [];
+    for (let i = 1; i < size + 1; i++) {
+        let block = [];
+        for (let j = 1; j < size + 1; j++) {
+            block.push(j);
+        }
+        field.push(block);
+    }
+
+    // Перемешиваем матрицу
+    field = Shift(field, size);
+    let mix = ['SwapRows(field, size)', 'SwapColumns(field, size)', 'Transpos(field, size)'];
+    if (size == 4 || size == 9) {
+        mix.push('SwapBlocksRow(field, size)');
+        mix.push('SwapBlocksColumn(field, size)');
+    }
+
+    let blocks = document.querySelectorAll('.block');
+    let type = document.querySelector('.type').textContent;
+    let abc = ["A", "B", "C", "D", "E", "F", "G", "H", "I"];
+
+    // очищаем классы ячеек, если игра того же размера
+    localStorage.removeItem('field');
+    localStorage.removeItem('refield');
+    localStorage.removeItem('hidefield');
+    for (let block of blocks) {
+        while(block.firstChild) {
+            block.removeChild(block.lastChild);
+        }
+        block.style.display = "inline";
+        block.textContent = '';
+        block.classList.remove('note');
+        block.classList.remove('correct');
+        block.classList.remove('wrong');
+        block.classList.remove('hidden');
+        block.classList.remove('block-selected');
+        block.classList.remove('block-line-selected');
+        block.classList.remove('block-line-wrong');
+        block.classList.remove('block-equal-selected');
+        if (block.classList.contains('note')) {
+            localStorage.removeItem('note'+block.id);
+        }
+    }
+
+    // 25-30 раз вызываем рандомную функцию перетасовки
+    for (let k = 0; k < random(25, 30); k++) {
+        for (let i = 0; i < size; i++) {
+            for (let j = 0; j < size; j++) {
+                // Заполняем ячейки
+                if (type == 'ABC') {
+                    blocks[i*size + j].textContent = field[i][j];
+                } else {
+                    blocks[i*size + j].textContent = abc[field[i][j]-1];
+                }
+            }
+        }
+        let n = random(0, mix.length-1);
+        field = eval(mix[n]);
+        await Sleep(200);
+    }
+    ClearField();
+    for (let i = 0; i < size; i++) {
+        for (let j = 0; j < size; j++) {
+            // Заполняем ячейки
+            if (type == 'ABC') {
+                blocks[i*size + j].textContent = field[i][j];
+            } else {
+                blocks[i*size + j].textContent = abc[field[i][j]-1];
+            }
+        }
+    }
+    await Sleep(500);
+    alert("Анимация завершена");
+}
+/* */
+
+/* Пауза */
+function Sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 /* */
 
