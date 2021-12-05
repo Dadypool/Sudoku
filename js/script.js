@@ -640,15 +640,15 @@ function Hide(field, d) {
                     n = random(14,16);
                     break;
                 case 5:
-                    n = random(9,11);
+                    n = random(10,14);
                     break;
                 case 4:
                     empty = 1;
-                    n = random(5,6);
+                    n = random(8,10);
                     break;
                 case 3:
                     empty = 2;
-                    n = 3;
+                    n = random(4,5);
                     break;
                 case 2:
                     empty = 2;
@@ -667,15 +667,15 @@ function Hide(field, d) {
                     break;
                 case 5:
                     empty = 1;
-                    n = random(12,13);
+                    n = random(17,19);
                     break;
                 case 4:
                     empty = 2;
-                    n = random(8,9);
+                    n = random(10,12);
                     break;
                 case 3:
                     empty = 3;
-                    n = 6;
+                    n = random(6,7);
                     break;
             }
             break;
@@ -683,14 +683,14 @@ function Hide(field, d) {
             empty = 1;
             switch(size) {
                 case 9:
-                    n = random(48,52);
+                    n = random(47,50);
                     break;
                 case 6:
                     n = random(21,23);
                     break;
                 case 5:
                     empty = 2;
-                    n = random(14,16);
+                    n = random(17,19);
                     break;
             }
             break;
@@ -698,16 +698,16 @@ function Hide(field, d) {
             empty = 2;
             switch(size) {
                 case 9:
-                    n = random(54,56);
+                    n = random(51,54);
                     break;
                 case 6:
-                    n = random(23,25);
+                    n = random(24,25);
                     break;
             }
             break;
         case 4: 
             empty = 3;
-            n = random(57,58);
+            n = random(55,56);
             break;
     }
 
@@ -721,6 +721,7 @@ function Hide(field, d) {
         refield.push(block);
     }
 
+    let r = 0;
     for (let l = 0; l < n; l++) {
         let bad = 0;
         do {
@@ -836,31 +837,38 @@ function Hide(field, d) {
         // Скрытые ячейки в матрице будут -1
         let temp = refield[ii][jj];
         refield[ii][jj] = -1;
+        localStorage.setItem('ufield', refield);
+        let g = SearchWin(0,1);
+        
         if (bad > 0) {
             empty = 0;
             l--;
+            r++;
             refield[ii][jj] = temp;
         } else if (!ShowMoves(refield)) {
-            empty = 0;
             l--;
+            r++;
+            refield[ii][jj] = temp;
+        } else if (!g) {
+            l--;
+            r++;
             refield[ii][jj] = temp;
         }
         else {
+            r = 0;
             refield[ii][jj] = -1;
         }
-    }
 
-    // Провеяем на наличие решения
-    while (ShowMoves(refield) < 2) {
-        //alert('0 moves');
-        let i, j;
-
-        do {
-            i = random(0, size-1);
-            j = random(0, size-1);
-        } while (refield[i][j] != -1);
-
-        refield[i][j] = field[i][j];
+        if (r > (size*size*size)) {
+            let ir = 0, jr = 0;
+            do {
+                ir = random(0, size-1);
+                jr = random(0, size-1);
+            }
+            while (refield[ir][jr] != -1);
+            refield[ir][jr] = field[ir][jr];
+            l--;
+        }
     }
 
     // Сохраняем информацию о ячейках и сложности
@@ -1026,7 +1034,7 @@ function WriteIn(field, refield, hidefield) {
     // Ввод ячйеки при нажатии на кнопку
     let nums = document.querySelectorAll('.num-on');
     for (let num of nums) {
-        num.onclick = function () {
+        num.onclick = async function () {
             let selected = document.querySelector('.block-selected');
             let ind = GetBlockInd();
             let bl = "blocks["+ind+"]";
@@ -1170,7 +1178,7 @@ function WriteIn(field, refield, hidefield) {
                     localStorage.setItem('hidefield', hidefield);
                     command = str + command;
                     stack.push(command);
-
+                    await Sleep(200);
                     CheckWin(field, hidefield, stack);
                 }
             }
@@ -1575,6 +1583,8 @@ function CreateField() {
     localStorage.removeItem('hidefield');
     for (let block of blocks) {
         if (block.classList.contains('note')) {
+            while (block.firstChild) block.removeChild(block.lastChild);
+            block.style.display = "inline";
             localStorage.removeItem('note'+block.id);
         }
     }
@@ -1756,7 +1766,7 @@ function UpdateNumpad() {
 /* */
 
 /* Поиск полного решения */
-function SearchWin(hidefield=null) {
+function SearchWin(hidefield=null, g=0) {
     let moves = 0;
     let size = parseInt(localStorage.getItem('size'));
     if (!size) size = 9;
@@ -1809,47 +1819,49 @@ function SearchWin(hidefield=null) {
                 if (ns.length == 1) {
                     moves++;
                     hidefield[i][j] = ns[0];
-                    SearchWin(hidefield);
+                    SearchWin(hidefield, g);
                 } else if (ns.length == 0) {
                     return 2;
-                }
-
-                let k = 0;
-                for (let n of ns) {
-                    k = 0;
-                    for (let ai = 0; ai < size; ai++) {
-                        if (ai != i) {
-                            for (let aj = 0; aj < size; aj++) {
-                                if (aj != j) {
-                                    if (hidefield[ai][aj] == n) k++;
+                } else {
+                    let k = 0;
+                    for (let n of ns) {
+                        k = 0;
+                        for (let ai = 0; ai < size; ai++) {
+                            if (ai != i) {
+                                for (let aj = 0; aj < size; aj++) {
+                                    if (aj != j) {
+                                        if (hidefield[ai][aj] == n) k++;
+                                    }
                                 }
                             }
                         }
-                    }
-                    if (k == (size-1)) {
-                        moves++;
-                        hidefield[i][j] = n;
-                        SearchWin(hidefield);
+                        if (k == (size-1)) {
+                            moves++;
+                            hidefield[i][j] = n;
+                            SearchWin(hidefield, g);
+                        }
                     }
                 }
 
+                let flag = 0, n = 0;
+                for (let i = 0; i < size; i++) {
+                    for (let j = 0; j < size; j++) {
+                        if (hidefield[i][j] == -1) {
+                            flag = 1;
+                            break;
+                        }
+                        n++;
+                    }
+                    if (flag) break;
+                }
+                if (n == (size*size) && !g) return hidefield;
+                else if (n == (size*size) && g) return 1;
             }
         }
     }
 
-    let flag = 0, n = 0;
-    for (let i = 0; i < size; i++) {
-        for (let j = 0; j < size; j++) {
-            if (hidefield[i][j] == -1) {
-                flag = 1;
-                break;
-            }
-            n++;
-        }
-        if (flag) break;
-    }
-    if (n == (size*size)) return hidefield;
-    else return 0;
+    
+    //else return 0;
 }
 /* */
 
@@ -1912,13 +1924,13 @@ function showStat() {
 /* */
 
 /* Анимация генерации поля */
-async function AnimationGenerateField() {
+async function AnimationGenerateField(s=0) {
     if (document.querySelector('.hidden')) { // Если есть текущая игра
         let c = confirm('Вы уверены, что хотите сбросить прогресс текущей игры?');
         if (!c) return;
     }
     document.querySelectorAll('.tool')[1].classList.remove('tool-on');
-    let size = document.querySelector('.select-size').value;
+    let size = document.querySelectorAll('.num-on').length;
 
     // Создаём новую матрицу
     let field = [];
@@ -1967,36 +1979,478 @@ async function AnimationGenerateField() {
 
     // 25-30 раз вызываем рандомную функцию перетасовки
     for (let k = 0; k < random(25, 30); k++) {
-        for (let i = 0; i < size; i++) {
-            for (let j = 0; j < size; j++) {
-                // Заполняем ячейки
-                if (type == 'ABC') {
-                    blocks[i*size + j].textContent = field[i][j];
-                } else {
-                    blocks[i*size + j].textContent = abc[field[i][j]-1];
-                }
+        for (let block of blocks) {
+            let n = field[parseInt(block.id[0])-1][parseInt(block.id[1])-1];
+            // Заполняем ячейки
+            if (type == 'ABC') {
+                block.textContent = n;
+            } else {
+                block.textContent = abc[n-1]
             }
         }
         let n = random(0, mix.length-1);
         field = eval(mix[n]);
-        await Sleep(200);
+        if (!s) await Sleep(700);
     }
-    ClearField();
-    for (let i = 0; i < size; i++) {
-        for (let j = 0; j < size; j++) {
-            // Заполняем ячейки
-            if (type == 'ABC') {
-                blocks[i*size + j].textContent = field[i][j];
-            } else {
-                blocks[i*size + j].textContent = abc[field[i][j]-1];
-            }
+
+    for (let block of blocks) {
+        let n = field[parseInt(block.id[0])-1][parseInt(block.id[1])-1];
+        // Заполняем ячейки
+        if (type == 'ABC') {
+            block.textContent = n;
+        } else {
+            block.textContent = abc[n-1]
         }
     }
-    await Sleep(500);
-    alert("Анимация завершена");
+    if (!s) await Sleep(300);
+    if (!s) alert("Анимация завершена");
+    if (s) localStorage.setItem('ufield', field);
 }
 /* */
 
+/* Анимация прятания ячеек */
+async function AnimationHideField(s=0, refield=0) {
+    AnimationGenerateField(1);
+    let size = parseInt(document.querySelector('.select-size').value);
+    let empty, n = 0, k, ii, jj;
+    let d = parseInt(document.querySelector('.select-difficulty').value);
+
+    // В зависимости от сложности и размера указываем определенное число ячеек, которое надо скрыть
+    switch (d) {
+        case 0: 
+            empty = 0;
+            switch(size) {
+                case 9:
+                    n = random(33,37);
+                    break;
+                case 6:
+                    n = random(14,16);
+                    break;
+                case 5:
+                    n = random(10,14);
+                    break;
+                case 4:
+                    empty = 1;
+                    n = random(8,10);
+                    break;
+                case 3:
+                    empty = 2;
+                    n = random(4,5);
+                    break;
+                case 2:
+                    empty = 2;
+                    n = 3;
+                    break;
+            }
+            break;
+        case 1:
+            empty = 0;
+            switch(size) {
+                case 9:
+                    n = random(40,43);
+                    break;
+                case 6:
+                    n = random(17,19);
+                    break;
+                case 5:
+                    empty = 1;
+                    n = random(17,19);
+                    break;
+                case 4:
+                    empty = 2;
+                    n = random(10,12);
+                    break;
+                case 3:
+                    empty = 3;
+                    n = random(6,7);
+                    break;
+            }
+            break;
+        case 2:
+            empty = 1;
+            switch(size) {
+                case 9:
+                    n = random(47,50);
+                    break;
+                case 6:
+                    n = random(21,23);
+                    break;
+                case 5:
+                    empty = 2;
+                    n = random(17,19);
+                    break;
+            }
+            break;
+        case 3: 
+            empty = 2;
+            switch(size) {
+                case 9:
+                    n = random(51,54);
+                    break;
+                case 6:
+                    n = random(24,25);
+                    break;
+            }
+            break;
+        case 4: 
+            empty = 3;
+            n = random(55,56);
+            break;
+    }    
+    
+    let blocks = document.querySelectorAll('.block');
+
+    let field = [];
+    if (!refield) {
+        refield = [];
+        let refield_str = localStorage.getItem('ufield');
+        refield_str = refield_str.split(',');
+        for (let i = 0; i < size; i++) {
+            let block = [];
+            for (let j = 0; j < size; j++) {
+                block.push(parseInt(refield_str[i*size + j]));
+            }
+            refield.push(block);
+        }
+
+        let field_str = localStorage.getItem('ufield');
+        field_str = field_str.split(',');
+        for (let i = 0; i < size; i++) {
+            let block = [];
+            for (let j = 0; j < size; j++) {
+                block.push(parseInt(field_str[i*size + j]));
+            }
+            field.push(block);
+        }
+    }
+
+    let r = 0;
+    for (let l = 0; l < n; l++) {
+        let bad = 0;
+        do {
+            ii = random(0, size-1);
+            jj = random(0, size-1);
+        }
+        while (refield[ii][jj] == -1);
+
+        // Проверка на пустой столбец
+        k = 0;
+        for (let i = 0; i < size; i++) {
+            if (refield[i][jj] != -1) {
+                break;
+            }
+            k++;
+        }
+        if (k == size-1) {
+            empty--;
+        }
+        if (empty < 0) {
+            bad++;
+        }
+
+        // Проверка на пустой ряд
+        k = 0;
+        for (let j = 0; j < size; j++) {
+            if (refield[ii][j] != -1) {
+                break;
+            }
+            k++;
+        }
+        if (k == size-1) {
+            empty--;
+        }
+        if (empty < 0) {
+            bad++;
+        }
+
+        let ki1 = 0;
+        let ki2 = 0;
+        let kj1 = 0;
+        let kj2 = 0;
+        // Проверка на пустое поле для 4х4 и 9х9
+        if (size == 9) {
+            if (ii < 3) {
+                ki1 = 0;
+                ki2 = 3;
+            } else if (ii >= 3 && ii < 6) {
+                ki1 = 3;
+                ki2 = 6;
+            } else {
+                ki1 = 6;
+                ki2 = 9;
+            }
+
+            if (jj < 3) {
+                kj1 = 0;
+                kj2 = 3;
+            } else if (jj >= 3 && jj < 6) {
+                kj1 = 3;
+                kj2 = 6;
+            } else {
+                kj1 = 6;
+                kj2 = 9;
+            }
+
+            k = 0;
+            for (let i = ki1; i < ki2; i++) {
+                for (let j = kj1; j < kj2; j++) {
+                    if (refield[i][j] != -1) {
+                        break;
+                    }
+                    k++;
+                }
+            }
+            if (k == 8) {
+                empty--;
+            }
+        } else if (size == 4) {
+            if (ii < 2) {
+                ki1 = 0;
+                ki2 = 2;
+            } else if (ii >= 2 && ii < 4) {
+                ki1 = 2;
+                ki2 = 4;
+            }
+
+            if (jj < 2) {
+                kj1 = 0;
+                kj2 = 2;
+            } else if (jj >= 2 && jj < 4) {
+                kj1 = 2;
+                kj2 = 4;
+            }
+
+            k = 0;
+            for (let i = ki1; i < ki2; i++) {
+                for (let j = kj1; j < kj2; j++) {
+                    if (refield[i][j] != -1) {
+                        break;
+                    }
+                    k++;
+                }
+            }
+            if (k == 8) {
+                empty--;
+            }
+        }
+        if (empty < 0) {
+            bad++;
+        }
+
+        // Скрытые ячейки в матрице будут -1
+        let temp = refield[ii][jj];
+        refield[ii][jj] = -1;
+        localStorage.setItem('ufield', refield);
+        let g = SearchWin(0,0);
+        if (bad > 0) {
+            empty = 0;
+            l--;
+            r++;
+            refield[ii][jj] = temp;
+        } else if (!ShowMoves(refield)) {
+            l--;
+            r++;
+            refield[ii][jj] = temp;
+        } else if (!g) {
+            l--;
+            r++;
+            refield[ii][jj] = temp;
+        }
+        else {
+            r = 0;
+            refield[ii][jj] = -1;
+            for (let block of blocks) {
+                if (block.id[0] == (ii+1) && block.id[1] == (jj+1)) {
+                    block.textContent = '';
+                }
+            }
+            if (!s) await Sleep(700);
+        }
+
+        if (r > (size*size*size)) {
+            let ir = 0, jr = 0;
+            do {
+                ir = random(0, size-1);
+                jr = random(0, size-1);
+            }
+            while (refield[ir][jr] != -1);
+            refield[ir][jr] = field[ir][jr];
+            l--;
+        }
+    }
+
+    if(!s) {
+        await Sleep(300);
+        alert("Анимация завершена");
+    }
+}
+/* */
+
+/* Анимация решения судоку*/
+async function AnimationPlayField(hidefield) {
+    if(!localStorage.getItem('hidefield')) {
+        alert("Для начала начните игру или введите своё поле и затем начните игру");
+        return;
+    }
+    if (!hidefield && !confirm("Вы точно хотите бросить решение и уидеть ответ?")) return;
+    let moves = 0;
+    let size = parseInt(localStorage.getItem('size'));
+    if (!size) size = 9;
+    let blocks = document.querySelectorAll('.block');
+    let type = document.querySelector('.type').textContent;
+    let abc = ["A", "B", "C", "D", "E", "F", "G", "H", "I"];
+    if (!hidefield) {
+        hidefield = [];
+        let hidefield_str = localStorage.getItem('hidefield');
+        hidefield_str = hidefield_str.split(',');
+        for (let i = 0; i < size; i++) {
+            let block = [];
+            for (let j = 0; j < size; j++) {
+                block.push(parseInt(hidefield_str[i*size + j]));
+            }
+            hidefield.push(block);
+        }
+        
+        field = [];
+        let field_str = localStorage.getItem('field');
+        field_str = field_str.split(',');
+        for (let i = 0; i < size; i++) {
+            let block = [];
+            for (let j = 0; j < size; j++) {
+                block.push(parseInt(field_str[i*size + j]));
+            }
+            field.push(block);
+        }
+
+        for (let i = 0; i < size; i++) {
+            for (let j = 0; j < size; j++) {
+                if(hidefield[i][j] != -1 && field[i][j] != hidefield[i][j]) {
+                    hidefield[i][j] = -1;
+                }
+            }
+        }
+    }
+
+    for (let block of blocks) {
+        if (block.classList.contains('block-selected')) block.click();
+        if (block.classList.contains('note')) {
+            while(block.firstChild) block.removeChild(block.lastChild);
+            block.style.display = "inline";
+            block.classList.remove('note'); 
+            localStorage.removeItem('note'+block.id)
+        }
+        block.classList.remove('hidden');
+        block.classList.remove('block-line-wrong');
+    }
+
+    for (let i = 0; i < size; i++) {
+        for (let j = 0; j < size; j++) {
+            if (hidefield[i][j] == -1) {
+                let ns = [];
+                for (let k = 1; k <= size; k++) ns.push(k);
+    
+                for (let k = 0; k < size; k++) {
+                    if(hidefield[k][j] != -1) {
+                        let index = ns.indexOf(hidefield[k][j]);
+                        if (index != -1) ns.splice(index, 1);
+                    }
+    
+                    if (hidefield[i][k] != -1) {
+                        let index = ns.indexOf(hidefield[i][k]);
+                        if (index != -1) ns.splice(index, 1);
+                    }
+                }
+
+                if (size == 4 || size == 9) {
+                    let sqr = Math.sqrt(size);
+                    let ai = Math.floor(i/sqr);
+                    let aj = Math.floor(j/sqr);
+
+                    for (let bi = ai*sqr; bi < (ai+1)*sqr; bi++) {
+                        for (let bj = aj*sqr; bj < (aj+1)*sqr; bj++) {
+                            if(hidefield[bi][bj] != -1) {
+                                let index = ns.indexOf(hidefield[bi][bj]);
+                                if (index != -1) ns.splice(index, 1);
+                            }
+                        }
+                    }
+                }
+
+                if (ns.length == 1) {
+                    moves++;
+                    hidefield[i][j] = ns[0];
+                    for (let block of blocks) {
+                        if (block.id[0] == (i+1) && block.id[1] == (j+1)) {
+                            if (type == 'ABC') {
+                                block.textContent = hidefield[i][j];
+                            } else {
+                                block.textContent = abc[hidefield[i][j]-1];
+                            }
+                            block.classList.remove('wrong');
+                        }
+                    }
+                    await Sleep(700);
+                    AnimationPlayField(hidefield);
+                    return;
+                } else if (ns.length == 0) {
+                    return 2;
+                } else {
+                    let k = 0;
+                    for (let n of ns) {
+                        k = 0;
+                        for (let ai = 0; ai < size; ai++) {
+                            if (ai != i) {
+                                for (let aj = 0; aj < size; aj++) {
+                                    if (aj != j) {
+                                        if (hidefield[ai][aj] == n) k++;
+                                    }
+                                }
+                            }
+                        }
+                        if (k == (size-1)) {
+                            moves++;
+                            hidefield[i][j] = n;
+                            for (let block of blocks) {
+                                if (block.id[0] == (i+1) && block.id[1] == (j+1)) {
+                                    if (type == 'ABC') {
+                                        block.textContent = hidefield[i][j];
+                                    } else {
+                                        block.textContent = abc[hidefield[i][j]-1];
+                                    }
+                                    block.classList.remove('wrong');
+                                }
+                            }
+
+                            await Sleep(700);
+                            AnimationPlayField(hidefield);
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let flag = 0, n = 0;
+    for (let i = 0; i < size; i++) {
+        for (let j = 0; j < size; j++) {
+            if (hidefield[i][j] == -1) {
+                flag = 1;
+                break;
+            }
+            n++;
+        }
+        if (flag) break;
+    }
+    if (n == (size*size)) {
+        await Sleep(200);
+        alert("Судоку решено");
+        localStorage.removeItem('field');
+        localStorage.removeItem('refield');
+    }
+}
+/* */
+ 
 /* Пауза */
 function Sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
